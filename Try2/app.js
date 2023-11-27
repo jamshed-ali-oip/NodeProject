@@ -1,6 +1,6 @@
 import express from "express";
 import PORT from "./config.js";
-import authRoutes from "./routes/auth.js"
+import authRoutes from "./routes/auth/index.js"
 import connecttoDb from "./db.js";
 const app = express();
 

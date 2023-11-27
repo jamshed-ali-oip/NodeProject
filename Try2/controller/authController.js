@@ -1,20 +1,25 @@
 
 import User from "../model/User.js";
 import bcrypt from 'bcrypt'
+import { generateToken, verifyToken } from "../Utils/helperFunc.js";
+import bodyParser from "body-parser";
 
 export const registerUser = async (req, res) => {
+
     try {
         const { firstName, lastName, email, password } = req.body
         const hashedPassword = await bcrypt.hash(password, 10);
         User.create({
             firstName, lastName, email, password: hashedPassword
         }).then((data) => {
-
+            // console.log("+++++++++++++++++++++", data?.-id)
+            const token = generateToken({ _id: data?._id })
             res.status(200).send({
                 message: "User created successfully",
                 success: true,
                 data: {
-                    data
+                    data,
+                    accessToken: token
                 }
             })
         }).catch((error) => {
@@ -44,10 +49,9 @@ export const registerUser = async (req, res) => {
 };
 
 export const getUserById = async (req, res) => {
-    const { id } = req.params
     try {
         const user = await User.findOne({
-            _id: id
+            _id: req.user._id
         }).select({ password: false })
 
         if (!user) {
@@ -67,10 +71,9 @@ export const getUserById = async (req, res) => {
     }
 }
 export const updateUserById = async (req, res) => {
-    const { id } = req.params
     const { firstName, lastName, email, password } = req.body
     try {
-        const user = await User.findOneAndUpdate({ _id: id }, {
+        const user = await User.findOneAndUpdate({ _id: req.user._id }, {
             $set: {
                 firstName,
                 lastName,
@@ -95,9 +98,8 @@ export const updateUserById = async (req, res) => {
     }
 }
 export const deleteUserById = async (req, res) => {
-    const { id } = req.params;
     try {
-        const user = await User.deleteOne({ _id: id })
+        const user = await User.deleteOne({ _id: req.user._id })
         if (!user) {
             res.status(404).send({
                 message: "User not found! "
@@ -114,7 +116,14 @@ export const deleteUserById = async (req, res) => {
 
 }
 export const login = async (req, res) => {
-    const { email, password } = req.body
+    const { email, password } = req?.body
+    // const token = req?.headers?.authorization?.split(" ")[1]
+    // const verifydata = verifyToken(token)
+    // const _id = verifydata?.id
+    // console.log("verify data: " + JSON.stringify(verifydata))
+    // accessToken=
+    // console.log("*******************", token)
+
     try {
         const user = await User.findOne({ email })
         if (!user) {
@@ -128,10 +137,13 @@ export const login = async (req, res) => {
                 message: "password doest not match"
             })
         } else {
+            const token = generateToken({ _id: user?._id })
+
             res.status(200).send({
                 success: true,
                 message: "User login Successfully",
-                data: user
+                data: user,
+                accessToken: token
 
             })
         }
